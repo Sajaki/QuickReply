@@ -98,6 +98,16 @@ class listener implements EventSubscriberInterface
 	public function viewtopic_modify_post_row($event)
 	{
 		$topic_data = $event['topic_data'];
+		if($this->config['qr_quickquote'])
+		{
+			$row = $event['row'];
+			$post_row = $event['post_row'];
+			$post_row = array_merge($post_row, array(
+				'QR_POST_TIME' => $row['post_time'],
+			));
+			$event['post_row'] = $post_row;
+		}
+
 		if ($this->config['qr_full_quote'] && $this->auth->acl_get('f_reply', $topic_data['forum_id']))
 		{
 			$row = $event['row'];

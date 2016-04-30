@@ -49,7 +49,6 @@ $lang = array_merge($lang, array(
 	'ACP_QR_QUICKNICK_REF_EXPLAIN'    => 'BBCode [ref] will be used instead of [b] in the function “Refer by username”.',
 	'ACP_QR_QUICKQUOTE'               => 'Enable quick quote',
 	'ACP_QR_QUICKQUOTE_EXPLAIN'       => 'Allow quotes through a “popup” that appears when you select text in a message.',
-	'ACP_QR_QUICKQUOTE_LINK'          => 'Add a link to the profile of the post author when using quick quote',
 	'ACP_QR_SCROLL_TIME'              => 'Time for a single scroll and animation event',
 	'ACP_QR_SCROLL_TIME_EXPLAIN'      => 'Time in milliseconds for the soft scroll feature. Enter 0 for the standard scroll.',
 	'ACP_QR_SHOW_BUTTON_TRANSLIT'     => 'Show button “Convert”',
@@ -57,5 +56,4 @@ $lang = array_merge($lang, array(
 	'ACP_QR_SHOW_SUBJECTS_IN_SEARCH'  => 'Show posts subjects in search results',
 	'ACP_QR_SMILIES'                  => 'Enable Smilies',
 	'ACP_QR_SMILIES_EXPLAIN'          => 'Allow display of smiles in the Quick Reply form.',
-	'ACP_QR_SOURCE_POST'              => 'Add a link to the quoted message when quoting',
 ));

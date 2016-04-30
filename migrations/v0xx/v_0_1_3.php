@@ -66,7 +66,7 @@ class v_0_1_3 extends \phpbb\db\migration\migration
 
 	private function get_bbcode_data()
 	{
-		return array(
+		$bbcode_array = array(
 			'ref' => array(
 				'bbcode_helpline'	=> 'BBCode for QuickReply extension',
 				'bbcode_match'		=> '[ref]{TEXT}[/ref]',
@@ -79,13 +79,20 @@ class v_0_1_3 extends \phpbb\db\migration\migration
 				'bbcode_tpl'		=> '<span style="font-weight: bold; color: {COLOR};">{TEXT}</span>',
 				'display_on_posting'=> 0,
 			),
-			'post'	=> array(
-				'bbcode_helpline'	=> 'BBCode for QuickReply extension',
-				'bbcode_match'		=> '[post]{NUMBER}[/post]',
-				'bbcode_tpl'		=> '<a href="./viewtopic.php?p={NUMBER}#p{NUMBER}"><span class="imageset icon_topic_latest" title="{L_QR_BBPOST}">{L_QR_BBPOST}</span></a>',
-				'display_on_posting'=> 0,
-			),
 		);
+
+		if(version_compare($this->config['version'], '3.2.0-a1', '<')) {
+			$bbcode_array += array(
+				'post'	=> array(
+					'bbcode_helpline'	=> 'BBCode for QuickReply extension',
+					'bbcode_match'		=> '[post]{NUMBER}[/post]',
+					'bbcode_tpl'		=> '<a href="./viewtopic.php?p={NUMBER}#p{NUMBER}"><span class="imageset icon_topic_latest" title="{L_QR_BBPOST}">{L_QR_BBPOST}</span></a>',
+					'display_on_posting'=> 0,
+				),
+			);
+		}
+		
+		return $bbcode_array;
 	}
 
 	private function build_bbcode_array($data)

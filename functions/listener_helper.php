@@ -247,9 +247,7 @@ class listener_helper
 			'S_QR_QUICKNICK_REF'      => $this->config['qr_quicknick_ref'],
 			'S_QR_QUICKNICK_PM'       => $this->config['qr_quicknick_pm'],
 			'S_QR_QUICKQUOTE_ENABLE'  => $this->config['qr_quickquote'],
-			'S_QR_QUICKQUOTE_LINK'    => $this->config['qr_quickquote_link'],
 			'S_QR_FULL_QUOTE'         => $this->config['qr_full_quote'],
-			'QR_SOURCE_POST'          => $this->config['qr_source_post'],
 			'S_DISPLAY_USERNAME'      => !$this->user->data['is_registered'],
 
 			'MESSAGE'                   => $this->request->variable('message', '', true),

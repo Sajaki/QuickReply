@@ -63,13 +63,8 @@
 	quickreply.functions.insertQuote = function(qr_post_id, selected_text) {
 		var qr_post_author = $('#qr_author_p' + qr_post_id),
 			nickname = qr_post_author.text(),
-			user_profile_url = qr_post_author.attr('data-url').replace(/^\.[\/\\]/, quickreply.editor.boardURL).replace(/(&amp;|&|\?)sid=[0-9a-f]{32}(&amp;|&)?/, function(str, p1, p2) {
-				return (p2) ? p1 : '';
-			}),
-			qr_user_name = (quickreply.settings.quickQuoteLink && user_profile_url && quickreply.settings.allowBBCode) ? '[url=' + user_profile_url + ']' + nickname + '[/url]' : nickname;
-
-		// Link to the source post
-		var qr_bbpost = (quickreply.settings.sourcePost) ? '[post]' + qr_post_id + '[/post] ' : '';
+			qr_user_id = qr_post_author.attr('data-url').replace(/(.)*u=/, ''),
+			qr_time = $('#post_content' + qr_post_id).find('.qr_time').text();
 
 		var message_name = 'decoded_p' + qr_post_id;
 		var theSelection = '';
@@ -112,9 +107,9 @@
 		if (theSelection) {
 			quickreply.style.showQuickReplyForm();
 			if (quickreply.settings.allowBBCode) {
-				insert_text('[quote="' + qr_user_name + '"]' + qr_bbpost + theSelection.replace(/(\[attachment.*?\]|\[\/attachment\])/g, '') + '[/quote]\r');
+				insert_text('[quote=' + nickname + ' post_id=' + qr_post_id + ' time=' + qr_time + ' user_id=' + qr_user_id + ']' + theSelection.replace(/(\[attachment.*?\]|\[\/attachment\])/g, '') + '[/quote]\r');
 			} else {
-				insert_text(qr_user_name + ' ' + quickreply.language.WROTE + ':' + '\n');
+				insert_text(nickname + ' ' + quickreply.language.WROTE + ':' + '\n');
 				var lines = split_lines(theSelection);
 				for (i = 0; i < lines.length; i++) {
 					insert_text('> ' + lines[i] + '\n');

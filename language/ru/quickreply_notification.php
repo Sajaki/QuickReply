@@ -28,4 +28,6 @@ $lang = array_merge($lang, array(
 	),
 
 	'NOTIFICATION_TYPE_QUICKNICK'	=> 'К Вам обратились по никнейму в сообщении',
+
+	'QR_BBPOST'                        => 'Источник цитаты',
 ));

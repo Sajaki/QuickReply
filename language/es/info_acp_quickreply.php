@@ -49,7 +49,6 @@ $lang = array_merge($lang, array(
 	'ACP_QR_QUICKNICK_REF_EXPLAIN'    => 'BBCode [ref] se utilizará en lugar de [b] en la función “Referir el nombre de usuario”.',
 	'ACP_QR_QUICKQUOTE'               => 'Habilitar cita rápida',
 	'ACP_QR_QUICKQUOTE_EXPLAIN'       => 'Permitir citas en un “popup” que aparece cuando se selecciona el texto en un mensaje.',
-	'ACP_QR_QUICKQUOTE_LINK'          => 'Añadir un enlace al perfil del autor del mensaje al utilizar la cita rápida',
 	'ACP_QR_SCROLL_TIME'              => 'Tiempo para un solo evento de desplazamiento y animación',
 	'ACP_QR_SCROLL_TIME_EXPLAIN'      => 'Tiempo en milisegundos para la función de desplazamiento suave. Introducir 0 para el desplazamiento estándar.',
 	'ACP_QR_SHOW_BUTTON_TRANSLIT'     => 'Mostrar botón “Convertir”',
@@ -57,5 +56,4 @@ $lang = array_merge($lang, array(
 	'ACP_QR_SHOW_SUBJECTS_IN_SEARCH'  => 'Mostrar asuntos de los mensajes en los resultados de búsqueda',
 	'ACP_QR_SMILIES'                  => 'Habilitar Emoticonos',
 	'ACP_QR_SMILIES_EXPLAIN'          => 'Permite mostrar los Emoticonos en el formulario de Respuesta Rápida.',
-	'ACP_QR_SOURCE_POST'              => 'Añadir un enlace al mensaje citado al citar',
 ));

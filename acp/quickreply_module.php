@@ -11,75 +11,72 @@ namespace boardtools\quickreply\acp;
 
 class quickreply_module
 {
+	/** @var \phpbb\config\config */
+	protected $config;
+
+	/** @var \phpbb\template\template */
+	protected $template;
+
+	/** @var \phpbb\user */
+	protected $user;
+
+	/** @var \phpbb\request\request */
+	protected $request;
+
+	/** @var string */
+	protected $form_key;
+
+	/** @var bool */
+	protected $submit;
+
+	/** @var array */
+	protected $error;
+
+	/** @var array */
+	protected $display_vars;
+
+	/** @var string */
 	public $u_action;
+
+	/** @var string */
+	public $page_title;
+
+	/** @var string */
+	public $tpl_name;
+
+	/** @var array */
 	public $new_config = array();
 
 	public function main($id, $mode)
 	{
-		global $config, $user, $template, $request;
+		global $config, $template, $user, $request;
 
-		$this->page_title = 'ACP_QUICKREPLY';
-		$this->tpl_name = 'acp_quickreply';
-		$user->add_lang_ext('boardtools/quickreply', 'quickreply');
-
-		$submit = ($request->is_set_post('submit')) ? true : false;
-		$form_key = 'config_quickreply';
-		add_form_key($form_key);
-
-		$display_vars = $this->generate_display_vars();
-
-		if (isset($display_vars['lang']))
-		{
-			$user->add_lang($display_vars['lang']);
-		}
-
+		$this->config = $config;
 		$this->new_config = $config;
-		$cfg_array = ($request->is_set('config')) ? $request->variable('config', array('' => ''), true) : $this->new_config;
-		$error = array();
+		$this->template = $template;
+		$this->user = $user;
+		$this->request = $request;
 
-		// We validate the complete config if wished
-		validate_config_vars($display_vars['vars'], $cfg_array, $error);
+		$this->tpl_name = 'acp_quickreply';
+		$this->form_key = 'config_quickreply';
+		add_form_key($this->form_key);
 
-		if ($submit && !check_form_key($form_key))
-		{
-			$error[] = $user->lang['FORM_INVALID'];
-		}
+		$this->generate_display_vars();
 
-		// Do not write values if there is an error
-		if (sizeof($error))
-		{
-			$submit = false;
-		}
-
-		$this->set_config($display_vars, $cfg_array, $submit, $config);
-
-		if ($submit)
-		{
-			trigger_error($user->lang['CONFIG_UPDATED'] . adm_back_link($this->u_action));
-		}
-
-		$this->page_title = $display_vars['title'];
-
-		$template->assign_vars(array(
-			'L_TITLE'         => $user->lang[$display_vars['title']],
-			'L_TITLE_EXPLAIN' => $user->lang[$display_vars['title'] . '_EXPLAIN'],
-
-			'S_ERROR'   => (sizeof($error)) ? true : false,
-			'ERROR_MSG' => implode('<br />', $error),
-		));
+		$this->submit_form();
 
 		// Output relevant page
-		$this->output_page($display_vars, $template, $user);
+		$this->output_page();
 	}
 
 	/**
-	 * Generates and returns the array of display_vars
+	 * Generates the array of display_vars
 	 *
 	 * @return array
 	 */
-	protected function generate_display_vars()
+	private function generate_display_vars()
 	{
-		return array(
+		$this->display_vars = array(
 			'title' => 'ACP_QUICKREPLY',
 			'vars'  => array(
 				'legend1'              => '',
@@ -94,8 +91,6 @@ class quickreply_module
 
 				'legend2'            => '',
 				'qr_quickquote'      => array('lang' => 'ACP_QR_QUICKQUOTE', 'validate' => 'bool', 'type' => 'radio:yes_no', 'explain' => true),
-				'qr_source_post'     => array('lang' => 'ACP_QR_SOURCE_POST', 'validate' => 'bool', 'type' => 'radio:yes_no', 'explain' => false),
-				'qr_quickquote_link' => array('lang' => 'ACP_QR_QUICKQUOTE_LINK', 'validate' => 'bool', 'type' => 'radio:yes_no', 'explain' => false),
 				'qr_full_quote'      => array('lang' => 'ACP_QR_FULL_QUOTE', 'validate' => 'bool', 'type' => 'radio:yes_no', 'explain' => true),
 				'qr_quicknick'       => array('lang' => 'ACP_QR_QUICKNICK', 'validate' => 'bool', 'type' => 'radio:yes_no', 'explain' => true),
 				'qr_quicknick_ref'   => array('lang' => 'ACP_QR_QUICKNICK_REF', 'validate' => 'bool', 'type' => 'radio:yes_no', 'explain' => true),
@@ -116,29 +111,107 @@ class quickreply_module
 	}
 
 	/**
+	 * When form is submitting
+	 */
+	private function submit_form()
+	{
+		$this->submit = $this->request->is_set_post('submit');
+
+		$cfg_array = ($this->request->is_set('config')) ? $this->request->variable('config', array('' => ''), true) : $this->new_config;
+		$this->error = array();
+
+		// We validate the complete config if wished
+		validate_config_vars($this->display_vars['vars'], $cfg_array, $this->error);
+		$this->check_form_valid();
+		$this->set_config($cfg_array);
+
+		if ($this->submit)
+		{
+			trigger_error($this->user->lang['CONFIG_UPDATED'] . adm_back_link($this->u_action));
+		}
+	}
+
+	/**
+	 * Check submitting errors
+	 */
+	private function check_form_valid()
+	{
+		if ($this->submit && !check_form_key($this->form_key))
+		{
+			$this->error[] = $this->user->lang['FORM_INVALID'];
+		}
+
+		// Do not write values if there is an error
+		if (sizeof($this->error))
+		{
+			$this->submit = false;
+		}
+	}
+
+	/**
 	 * Set the new configuration array
 	 *
-	 * @param array                $display_vars Array of display_vars
 	 * @param array                $cfg_array    Array with new values
-	 * @param bool                 $submit       Whether the form was submitted
-	 * @param \phpbb\config\config $config       Config object
 	 */
-	protected function set_config($display_vars, $cfg_array, $submit, $config)
+	private function set_config($cfg_array)
 	{
 		// We go through the display_vars to make sure no one is trying to set variables he/she is not allowed to...
-		foreach ($display_vars['vars'] as $config_name => $null)
+		foreach ($this->display_vars['vars'] as $config_name => $null)
 		{
-			if (!isset($cfg_array[$config_name]) || strpos($config_name, 'legend') !== false)
+			if ($this->invalid_var($config_name, $cfg_array))
 			{
 				continue;
 			}
 
 			$this->new_config[$config_name] = $config_value = $cfg_array[$config_name];
 
-			if ($submit)
+			if ($this->submit)
 			{
-				$config->set($config_name, $config_value);
+				$this->config->set($config_name, $config_value);
 			}
+		}
+	}
+
+	/**
+	 * Check var for valid
+	 *
+	 * @param string 				   $config_name
+	 * @param array                    $cfg_array
+	 */
+	private function invalid_var($config_name, $cfg_array)
+	{
+		return (!isset($cfg_array[$config_name]) || strpos($config_name, 'legend') !== false);
+	}
+
+	/**
+	 * Add language
+	 *
+	 * @param string                   $display_vars_lang
+	 */
+	private function add_langs($display_vars_lang)
+	{
+		$this->user->add_lang_ext('boardtools/quickreply', 'quickreply');
+		if (isset($display_vars_lang))
+		{
+			$this->user->add_lang($display_vars_lang);
+		}
+	}
+
+	/**
+	 * Get text for title (if exists)
+	 *
+	 * @param array       $vars Array of vars
+	 * @return string
+	 */
+	private function get_title($vars, $key, $key2 = '')
+	{
+		if (isset($this->user->lang[$vars[$key] . $key2]))
+		{
+			return $this->user->lang[$vars[$key] . $key2];
+		}
+		else
+		{
+			return ($key2 === '') ? $vars[$key] : '';
 		}
 	}
 
@@ -146,67 +219,90 @@ class quickreply_module
 	 * Get text for title explanation (if exists)
 	 *
 	 * @param array       $vars Array of vars
-	 * @param \phpbb\user $user User object
 	 * @return string
 	 */
-	protected function get_title_explain($vars, $user)
+	private function get_title_explain($vars)
 	{
 		$l_explain = '';
 		if ($vars['explain'] && isset($vars['lang_explain']))
 		{
-			$l_explain = (isset($user->lang[$vars['lang_explain']])) ? $user->lang[$vars['lang_explain']] : $vars['lang_explain'];
+			$l_explain = $this->get_title($vars, 'lang_explain');
 		}
 		else if ($vars['explain'])
 		{
-			$l_explain = (isset($user->lang[$vars['lang'] . '_EXPLAIN'])) ? $user->lang[$vars['lang'] . '_EXPLAIN'] : '';
+			$l_explain = $this->get_title($vars, 'lang', '_EXPLAIN');
 		}
 		return $l_explain;
 	}
 
 	/**
-	 * Output the page
-	 *
-	 * @param array                    $display_vars Array of display_vars
-	 * @param \phpbb\template\template $template     Template object
-	 * @param \phpbb\user              $user         User object
+	 * Output title and errors
 	 */
-	protected function output_page($display_vars, $template, $user)
+	private function output_basic_vars()
 	{
-		foreach ($display_vars['vars'] as $config_key => $vars)
+		$this->template->assign_vars(array(
+			'L_TITLE'         => $this->user->lang[$this->display_vars['title']],
+			'L_TITLE_EXPLAIN' => $this->user->lang[$this->display_vars['title'] . '_EXPLAIN'],
+
+			'S_ERROR'   => (sizeof($this->error)) ? true : false,
+			'ERROR_MSG' => implode('<br />', $this->error),
+		));
+	}
+
+	private function output_options($config_key, $vars, $content)
+	{
+		$this->template->assign_block_vars('options', array(
+			'KEY'           => $config_key,
+			'TITLE'         => $this->get_title($vars, 'lang'),
+			'S_EXPLAIN'     => $vars['explain'],
+			'TITLE_EXPLAIN' => $this->get_title_explain($vars),
+			'CONTENT'       => $content,
+		));
+	}
+
+	/**
+	 * Output options
+	 */
+	private function output_vars($config_key, $vars)
+	{
+		if (strpos($config_key, 'legend') !== false)
+		{
+			$this->template->assign_block_vars('options', array(
+				'S_LEGEND' => true,
+				'LEGEND'   => $this->user->lang($vars)
+			));
+		}
+		else
+		{
+			$type = explode(':', $vars['type']);
+
+			$content = build_cfg_template($type, $config_key, $this->new_config, $config_key, $vars);
+
+			if (!empty($content))
+			{
+				$this->output_options($config_key, $vars, $content);
+				unset($this->display_vars['vars'][$config_key]);
+			}
+		}
+	}
+
+	/**
+	 * Output the page
+	 */
+	private function output_page()
+	{
+		$this->page_title = $this->display_vars['title'];
+		$this->add_langs($this->display_vars['lang']);
+		$this->output_basic_vars();
+
+		foreach ($this->display_vars['vars'] as $config_key => $vars)
 		{
 			if (!is_array($vars) && strpos($config_key, 'legend') === false)
 			{
 				continue;
 			}
 
-			if (strpos($config_key, 'legend') !== false)
-			{
-				$template->assign_block_vars('options', array(
-					'S_LEGEND' => true,
-					'LEGEND'   => $user->lang($vars)
-				));
-
-				continue;
-			}
-
-			$type = explode(':', $vars['type']);
-
-			$content = build_cfg_template($type, $config_key, $this->new_config, $config_key, $vars);
-
-			if (empty($content))
-			{
-				continue;
-			}
-
-			$template->assign_block_vars('options', array(
-				'KEY'           => $config_key,
-				'TITLE'         => (isset($user->lang[$vars['lang']])) ? $user->lang[$vars['lang']] : $vars['lang'],
-				'S_EXPLAIN'     => $vars['explain'],
-				'TITLE_EXPLAIN' => $this->get_title_explain($vars, $user),
-				'CONTENT'       => $content,
-			));
-
-			unset($display_vars['vars'][$config_key]);
+			$this->output_vars($config_key, $vars);
 		}
 	}
 }

@@ -38,6 +38,9 @@ class ajax_helper
 	/** @var string */
 	protected $php_ext;
 
+	/** @var ajax_preview_helper */
+	public $ajax_preview_helper;
+
 	/** @var bool */
 	public $qr_insert;
 
@@ -56,8 +59,9 @@ class ajax_helper
 	 * @param \phpbb\request\request            $request
 	 * @param string                            $phpbb_root_path Root path
 	 * @param string                            $php_ext
+	 * @param ajax_preview_helper               $ajax_preview_helper
 	 */
-	public function __construct(\phpbb\auth\auth $auth, \phpbb\config\config $config, \phpbb\template\template $template, \phpbb\user $user, \phpbb\db\driver\driver_interface $db, \phpbb\content_visibility $phpbb_content_visibility, \phpbb\request\request $request, $phpbb_root_path, $php_ext)
+	public function __construct(\phpbb\auth\auth $auth, \phpbb\config\config $config, \phpbb\template\template $template, \phpbb\user $user, \phpbb\db\driver\driver_interface $db, \phpbb\content_visibility $phpbb_content_visibility, \phpbb\request\request $request, $phpbb_root_path, $php_ext, ajax_preview_helper $ajax_preview_helper)
 	{
 		$this->auth = $auth;
 		$this->config = $config;
@@ -68,6 +72,7 @@ class ajax_helper
 		$this->request = $request;
 		$this->phpbb_root_path = $phpbb_root_path;
 		$this->php_ext = $php_ext;
+		$this->ajax_preview_helper = $ajax_preview_helper;
 		$this->qr_insert = false;
 		$this->qr_first = false;
 	}
@@ -117,9 +122,14 @@ class ajax_helper
 			'qr_cur_post_id' => (int) $current_post_id
 		)));
 		// Output the page
+		$this->output_ajax_response($page_title, $forum_id);
+	}
+
+	public function output_ajax_response($page_title, $forum_id)
+	{
 		page_header($page_title, false, $forum_id);
 		page_footer(false, false, false);
-		$this->send_json(array(
+		self::send_json(array(
 			'success' => true,
 			'result'  => $this->template->assign_display('@boardtools_quickreply/quickreply_template.html', '', true),
 			'insert'  => $this->qr_insert
@@ -134,7 +144,7 @@ class ajax_helper
 	public function ajax_submit($event)
 	{
 		$data = $event['data'];
-		if ((!$this->auth->acl_get('f_noapprove', $data['forum_id']) && empty($data['force_approved_state'])) || (isset($data['force_approved_state']) && !$data['force_approved_state']))
+		if ($this->is_not_approved($data))
 		{
 			// No approve
 			$this->send_approval_notify();
@@ -144,11 +154,28 @@ class ajax_helper
 		$url_hash = strpos($event['url'], '#');
 		$result_url = ($url_hash !== false) ? substr($event['url'], 0, $url_hash) : $event['url'];
 
-		$this->send_json(array(
+		self::send_json(array(
 			'success' => true,
 			'url'     => $result_url,
 			'merged'  => ($qr_cur_post_id === $data['post_id']) ? 'merged' : 'not_merged'
 		));
+	}
+
+	/**
+	 * Check approve
+	 *
+	 * @param array $data
+	 * @return bool
+	 */
+	public function is_not_approved($data)
+	{
+		return (
+			!$this->auth->acl_get('f_noapprove', $data['forum_id'])
+			&& empty($data['force_approved_state'])
+		) || (
+			isset($data['force_approved_state'])
+			&& !$data['force_approved_state']
+		);
 	}
 
 	/**
@@ -160,64 +187,11 @@ class ajax_helper
 	{
 		if (sizeof($error))
 		{
-			$this->send_json(array(
+			self::send_json(array(
 				'error'         => true,
 				'MESSAGE_TITLE' => $this->user->lang['INFORMATION'],
 				'MESSAGE_TEXT'  => implode('<br />', $error),
 			));
-		}
-	}
-
-	/**
-	 * Checks whether this is an ajax request and handles ajax preview
-	 *
-	 * @param object $event The event object
-	 */
-	public function check_ajax_preview($event)
-	{
-		if ($this->qr_is_ajax_submit())
-		{
-			$this->check_errors($event['error']);
-
-			// Preview
-			if ($event['preview'])
-			{
-				$post_data = $event['post_data'];
-				$forum_id = (int) $post_data['forum_id'];
-				/** @var \parse_message $message_parser */
-				$message_parser = $event['message_parser'];
-
-				$message_parser->message = $this->request->variable('message', '', true);
-				$preview_message = $message_parser->format_display($post_data['enable_bbcode'], $post_data['enable_urls'], $post_data['enable_smilies'], false);
-
-				$preview_attachments = false;
-				// Attachment Preview
-				if (sizeof($message_parser->attachment_data))
-				{
-					$update_count = array();
-					$attachment_data = $message_parser->attachment_data;
-
-					parse_attachments($forum_id, $preview_message, $attachment_data, $update_count, true);
-
-					$preview_attachments = '';
-					foreach ($attachment_data as $i => $attachment)
-					{
-						$preview_attachments .= '<dd>' . $attachment . '</dd>';
-					}
-					if (!empty($preview_attachments))
-					{
-						$preview_attachments = '<dl class="attachbox"><dt>' . $this->user->lang['ATTACHMENTS'] . '</dt>' . $preview_attachments . '</dl>';
-					}
-					unset($attachment_data);
-				}
-
-				$this->send_json(array(
-					'preview'        => true,
-					'PREVIEW_TITLE'  => $this->user->lang['PREVIEW'],
-					'PREVIEW_TEXT'   => $preview_message,
-					'PREVIEW_ATTACH' => $preview_attachments,
-				));
-			}
 		}
 	}
 
@@ -244,7 +218,7 @@ class ajax_helper
 		$url_next_post = append_sid("{$this->phpbb_root_path}viewtopic.$this->php_ext", "f=$forum_id&amp;t=$topic_id&amp;p=$post_id_next"); // #p$post_id_next
 		$current_post = $this->request->variable('qr_cur_post_id', 0);
 
-		$this->send_json(array(
+		self::send_json(array(
 			'error'         => true,
 			'merged'        => ($post_id_next === $current_post) ? 'merged' : 'not_merged',
 			'MESSAGE_TITLE' => $this->user->lang['INFORMATION'],
@@ -258,7 +232,7 @@ class ajax_helper
 	 */
 	public function send_approval_notify()
 	{
-		$this->send_json(array(
+		self::send_json(array(
 			'noapprove'     => true,
 			'MESSAGE_TITLE' => $this->user->lang['INFORMATION'],
 			'MESSAGE_TEXT'  => $this->user->lang['POST_STORED_MOD'] . (($this->user->data['user_id'] == ANONYMOUS) ? '' : ' ' . $this->user->lang['POST_APPROVAL_NOTIFY']),
@@ -275,7 +249,7 @@ class ajax_helper
 	 */
 	public function send_last_post_id($post_id)
 	{
-		$this->send_json(array(
+		self::send_json(array(
 			'post_update' => true,
 			'post_id'     => $post_id,
 		));
@@ -286,9 +260,28 @@ class ajax_helper
 	 *
 	 * @param array $data Array with JSON data
 	 */
-	public function send_json($data)
+	public static function send_json($data)
 	{
 		$json_response = new \phpbb\json_response;
 		$json_response->send($data);
+	}
+
+	public function template_variables_for_ajax()
+	{
+		return array(
+			'L_FULL_EDITOR'    => ($this->config['qr_ajax_submit']) ? $this->user->lang['PREVIEW'] : $this->user->lang['FULL_EDITOR'],
+			'S_QR_AJAX_SUBMIT' => $this->config['qr_ajax_submit'],
+
+			'S_QR_AJAX_PAGINATION' => $this->config['qr_ajax_pagination'] && $this->user->data['ajax_pagination'],
+
+			'S_QR_ENABLE_SCROLL'   => $this->user->data['qr_enable_scroll'],
+			'S_QR_SCROLL_INTERVAL' => $this->config['qr_scroll_time'],
+			'S_QR_SOFT_SCROLL'     => $this->config['qr_scroll_time'] && $this->user->data['qr_soft_scroll']
+		);
+	}
+
+	public function no_refresh($current_post, $post_list)
+	{
+		return $this->request->is_ajax() && $this->request->variable('qr_no_refresh', 0) && in_array($current_post, $post_list);
 	}
 }

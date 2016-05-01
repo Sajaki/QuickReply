@@ -21,7 +21,6 @@ if (empty($lang) || !is_array($lang))
 }
 
 $lang = array_merge($lang, array(
-	'QR_BBPOST'                        => 'Source of the post',
 	'QR_INSERT_TEXT'                   => 'Insert quote in the Quick Reply form',
 	'QR_PROFILE'                       => 'Go to profile',
 	'QR_QUICKNICK'                     => 'Refer by username',

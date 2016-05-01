@@ -17,6 +17,40 @@
 		}
 	}
 
+	/********************/
+	/* Helper functions */
+	/********************/
+	/**
+	 * Gets the selected text.
+	 *
+	 * @returns {string}
+	 */
+	function qr_getSelection() {
+		var sel = '';
+		if (window.getSelection) {
+			sel = window.getSelection().toString();
+		} else if (document.getSelection) {
+			sel = document.getSelection();
+		} else if (document.selection) {
+			sel = document.selection.createRange().text;
+		}
+		return sel;
+	}
+
+	/**
+	 * Gets cursor coordinates.
+	 *
+	 * @param {Event} evt jQuery Event object
+	 */
+	function qr_getCoordinates(evt) {
+		if (evt.type == 'touchstart') {
+			evt.pageX = evt.originalEvent.touches[0].pageX;
+			evt.pageY = evt.originalEvent.touches[0].pageY;
+		}
+		qr_pageX = evt.pageX || evt.clientX + document.documentElement.scrollLeft; // FF || IE
+		qr_pageY = evt.pageY || evt.clientY + document.documentElement.scrollTop;
+	}
+
 	/**************************************/
 	/* Quick Quote and Full Quote Plugins */
 	/**************************************/
@@ -29,13 +63,8 @@
 	quickreply.functions.insertQuote = function(qr_post_id, selected_text) {
 		var qr_post_author = $('#qr_author_p' + qr_post_id),
 			nickname = qr_post_author.text(),
-			user_profile_url = qr_post_author.attr('data-url').replace(/^\.[\/\\]/, quickreply.editor.boardURL).replace(/(&amp;|&|\?)sid=[0-9a-f]{32}(&amp;|&)?/, function(str, p1, p2) {
-				return (p2) ? p1 : '';
-			}),
-			qr_user_name = (quickreply.settings.quickQuoteLink && user_profile_url && quickreply.settings.allowBBCode) ? '[url=' + user_profile_url + ']' + nickname + '[/url]' : nickname;
-
-		// Link to the source post
-		var qr_bbpost = (quickreply.settings.sourcePost) ? '[post]' + qr_post_id + '[/post] ' : '';
+			qr_user_id = qr_post_author.attr('data-url').replace(/(.)*u=/, ''),
+			qr_time = $('#post_content' + qr_post_id).find('.qr_time').text();
 
 		var message_name = 'decoded_p' + qr_post_id;
 		var theSelection = '';
@@ -54,12 +83,8 @@
 		// IE9 must use the document.selection method but has the *.getSelection so we just force no IE
 		if (selected_text) {
 			theSelection = selected_text;
-		} else if (window.getSelection && !is_ie && !window.opera) {
-			theSelection = window.getSelection().toString();
-		} else if (document.getSelection && !is_ie) {
-			theSelection = document.getSelection();
-		} else if (document.selection) {
-			theSelection = document.selection.createRange().text;
+		} else {
+			theSelection = qr_getSelection();
 		}
 
 		if (theSelection === '' || typeof theSelection === 'undefined' || theSelection === null) {
@@ -82,9 +107,9 @@
 		if (theSelection) {
 			quickreply.style.showQuickReplyForm();
 			if (quickreply.settings.allowBBCode) {
-				insert_text('[quote="' + qr_user_name + '"]' + qr_bbpost + theSelection + '[/quote]\r');
+				insert_text('[quote=' + nickname + ' post_id=' + qr_post_id + ' time=' + qr_time + ' user_id=' + qr_user_id + ']' + theSelection.replace(/(\[attachment.*?\]|\[\/attachment\])/g, '') + '[/quote]\r');
 			} else {
-				insert_text(qr_user_name + ' ' + quickreply.language.WROTE + ':' + '\n');
+				insert_text(nickname + ' ' + quickreply.language.WROTE + ':' + '\n');
 				var lines = split_lines(theSelection);
 				for (i = 0; i < lines.length; i++) {
 					insert_text('> ' + lines[i] + '\n');
@@ -113,23 +138,14 @@
 				return;
 			}
 
-			// Get cursor coordinates
-			var pageX = evt.pageX || evt.clientX + document.documentElement.scrollLeft; // FF || IE
-			var pageY = evt.pageY || evt.clientY + document.documentElement.scrollTop;
+			qr_getCoordinates(evt);
 			// Which mouse button is pressed?
 			var key = evt.button || evt.which || null; // IE || FF || Unknown
 
 			var qr_post_id = quickreply.style.getPostId($element);
 
 			setTimeout(function() { // Timeout prevents popup when clicking on selected text
-				var sel = '';
-				if (window.getSelection) {
-					sel = window.getSelection().toString();
-				} else if (document.getSelection) {
-					sel = document.getSelection();
-				} else if (document.selection) {
-					sel = document.selection.createRange().text;
-				}
+				var sel = qr_getSelection();
 
 				if (sel && key <= 1) { // If text selected && right mouse button not pressed
 					function qr_insert_quickquote() {
@@ -141,7 +157,7 @@
 					if (qrAlert) {
 						qr_alert_remove();
 					}
-					qrAlert = quickreply.style.quickQuoteDropdown(pageX, pageY).mousedown(qr_insert_quickquote);
+					qrAlert = quickreply.style.quickQuoteDropdown(qr_pageX, qr_pageY).mousedown(qr_insert_quickquote);
 					setTimeout(function() {
 						$(document.body).one('mousedown', qr_alert_remove);
 					}, 10);
@@ -152,10 +168,6 @@
 		var reply_posts = $('#qr_posts'), quickquote_cancel_event = false;
 
 		function qr_handle_quickquote(evt) {
-			if (evt.type == 'touchstart') {
-				evt.pageX = evt.originalEvent.touches[0].pageX;
-				evt.pageY = evt.originalEvent.touches[0].pageY;
-			}
 			qr_quickquote(evt, $(this));
 			if (!quickquote_cancel_event) {
 				reply_posts.on('mousemove', '.content', qr_quickquote);
@@ -235,6 +247,7 @@
 			insert_text('[ref' + qr_color + ']' + nickname + '[/ref]' + comma, false);
 		}
 	};
+
 	if (quickreply.settings.quickNick) {
 		function qr_quicknick(evt, link) {
 			// Get cursor coordinates
@@ -242,16 +255,13 @@
 				evt = window.event;
 			}
 			evt.preventDefault();
-			var pageX = evt.pageX || evt.clientX + document.documentElement.scrollLeft; // FF || IE
-			var pageY = evt.pageY || evt.clientY + document.documentElement.scrollTop;
-			// Which mouse button is pressed?
-			var key = evt.button || evt.which || null; // IE || FF || Unknown
+			qr_getCoordinates(evt);
 
 			// Get nick and id
 			var viewprofile_url = link.attr('href');
 			var qr_pm_link = link.parents('.post').find('.contact-icon.pm-icon').parent('a');
 
-			var qrNickAlert = quickreply.style.quickNickDropdown(pageX, pageY, viewprofile_url, qr_pm_link);
+			var qrNickAlert = quickreply.style.quickNickDropdown(qr_pageX, qr_pageY, viewprofile_url, qr_pm_link);
 
 			$('a.qr_quicknick', qrNickAlert).mousedown(function() {
 				quickreply.functions.quickNick(link);
@@ -309,19 +319,16 @@
 	/* ABBC 3.1 Plugin */
 	/*******************/
 	if (quickreply.plugins.abbc3) {
-		/* Ajax Submit */
-		$('#qr_posts').on('qr_loaded qr_completed', function(e, elements) {
+		var qr_abbc3_bbvideo = function(e, elements) {
 			var bbvideo = elements.find('.bbvideo');
 			if (bbvideo.length > 0) {
 				bbvideo.bbvideo();
 			}
-		});
-		$('#qr_postform').on('ajax_submit_preview', function() {
-			var bbvideo = $('#preview').find('.bbvideo');
-			if (bbvideo.length > 0) {
-				bbvideo.bbvideo();
-			}
-		});
+		};
+
+		/* Ajax Submit */
+		$('#qr_posts').on('qr_completed', qr_abbc3_bbvideo);
+		$('#qr_postform').on('ajax_submit_preview', qr_abbc3_bbvideo);
 	}
 
 	/*********************/

@@ -37,8 +37,14 @@ class v_2_0_0_dev extends \phpbb\db\migration\migration
 
 	public function update_bbcode_post()
 	{
+		if (!class_exists('boardtools\quickreply\migrations\v0xx\v_0_1_3'))
+		{
+			include($this->phpbb_root_path . 'ext/boardtools/quickreply/migrations/v0xx/v_0_1_3.' . $this->php_ext);
+		}
+		$bbcode_funcs = new \boardtools\quickreply\migrations\v0xx\v_0_1_3($this->config, $this->db, $this->db_tools, $this->phpbb_root_path, $this->php_ext, $this->table_prefix);
+
 		// Load the acp_bbcode class
-		$bbcode_tool = $this->load_class();
+		$bbcode_tool = $bbcode_funcs->load_class();
 
 		$bbcode_data = $this->get_bbcode_data();
 
@@ -46,24 +52,15 @@ class v_2_0_0_dev extends \phpbb\db\migration\migration
 		{
 			// Build the BBCodes
 			$data = $bbcode_tool->build_regexp($bbcode_array['bbcode_match'], $bbcode_array['bbcode_tpl']);
-			$bbcode_array += $this->build_bbcode_array($data);
+			$bbcode_array += $bbcode_funcs->build_bbcode_array($data);
 
-			$row_exists = $this->exist_bbcode($bbcode_name, $bbcode_array);
+			$row_exists = $bbcode_funcs->exist_bbcode($bbcode_name, $bbcode_array);
 			if ($row_exists)
 			{
 				// Update existing BBCode
-				$this->update_bbcode($row_exists['bbcode_id'], $bbcode_array);
+				$bbcode_funcs->update_bbcode($row_exists['bbcode_id'], $bbcode_array);
 			}
 		}
-	}
-
-	private function load_class()
-	{
-		if (!class_exists('acp_bbcodes'))
-		{
-			include($this->phpbb_root_path . 'includes/acp/acp_bbcodes.' . $this->php_ext);
-		}
-		return new \acp_bbcodes();
 	}
 
 	private function get_bbcode_data()
@@ -76,37 +73,5 @@ class v_2_0_0_dev extends \phpbb\db\migration\migration
 				'display_on_posting'=> 0,
 			),
 		);
-	}
-
-	private function build_bbcode_array($data)
-	{
-		return array(
-				'bbcode_tag'			=> $data['bbcode_tag'],
-				'first_pass_match'		=> $data['first_pass_match'],
-				'first_pass_replace'	=> $data['first_pass_replace'],
-				'second_pass_match'		=> $data['second_pass_match'],
-				'second_pass_replace'	=> $data['second_pass_replace']
-			);
-	}
-
-	private function exist_bbcode($bbcode_name, $bbcode_array)
-	{
-		$sql = 'SELECT bbcode_id
-				FROM ' . $this->table_prefix . "bbcodes
-				WHERE LOWER(bbcode_tag) = '" . strtolower($bbcode_name) . "'
-				OR LOWER(bbcode_tag) = '" . strtolower($bbcode_array['bbcode_tag']) . "'";
-		$result = $this->db->sql_query($sql);
-		$row_exists = $this->db->sql_fetchrow($result);
-		$this->db->sql_freeresult($result);
-
-		return $row_exists;
-	}
-
-	private function update_bbcode($bbcode_id, $bbcode_array)
-	{
-		$sql = 'UPDATE ' . $this->table_prefix . 'bbcodes
-			SET ' . $this->db->sql_build_array('UPDATE', $bbcode_array) . '
-			WHERE bbcode_id = ' . $bbcode_id;
-		$this->db->sql_query($sql);
 	}
 }

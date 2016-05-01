@@ -181,7 +181,7 @@
 	 * @returns {jQuery}
 	 */
 	quickreply.style.getQuoteButtons = function(elements) {
-		return elements.find('.post-buttons .quote-icon').not('.responsive-menu .quote-icon');
+		return elements.find('.post-buttons .icon.fa-quote-left').not('.responsive-menu .icon.fa-quote-left').parent();
 	};
 
 	/**
@@ -198,7 +198,7 @@
 	 * @param {function} fn       Event handler function
 	 */
 	quickreply.style.responsiveQuotesOnClick = function(elements, fn) {
-		elements.find('.post-buttons .responsive-menu').on('click', '.quote-icon', fn);
+		elements.find('.post-buttons .responsive-menu').on('click', '.quote-icon', fn); //? for fix
 	};
 
 	/**

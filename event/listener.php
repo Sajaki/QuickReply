@@ -98,7 +98,7 @@ class listener implements EventSubscriberInterface
 	public function viewtopic_modify_post_row($event)
 	{
 		$topic_data = $event['topic_data'];
-		if($this->config['qr_quickquote'])
+		if ($this->config['qr_quickquote'])
 		{
 			$row = $event['row'];
 			$post_row = $event['post_row'];
@@ -144,7 +144,7 @@ class listener implements EventSubscriberInterface
 		{
 			if (!$this->user->data['is_registered'])
 			{
-				$this->helper->template_variables += $this->helper->enable_qr_for_guests($forum_id, $topic_data);
+				$this->helper->enable_qr_for_guests($forum_id, $topic_data);
 			}
 
 			$this->helper->form_helper->prepare_qr_form($forum_id, $topic_id);

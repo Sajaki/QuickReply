@@ -64,7 +64,7 @@
 		var qr_post_author = $('#qr_author_p' + qr_post_id),
 			nickname = qr_post_author.text(),
 			qr_user_id = qr_post_author.attr('data-url').replace(/(.)*u=/, ''),
-			qr_time = $('#post_content' + qr_post_id).find('.qr_time').text();
+			qr_time = $('#qr_time' + qr_post_id).text();
 
 		var message_name = 'decoded_p' + qr_post_id;
 		var theSelection = '';

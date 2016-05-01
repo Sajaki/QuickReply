@@ -198,7 +198,7 @@
 	 * @param {function} fn       Event handler function
 	 */
 	quickreply.style.responsiveQuotesOnClick = function(elements, fn) {
-		elements.find('.post-buttons .responsive-menu').on('click', '.quote-icon', fn); //? for fix
+		elements.find('.post-buttons .responsive-menu').on('click', '.quote-icon', fn); //@TODO
 	};
 
 	/**

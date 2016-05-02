@@ -16,6 +16,7 @@
 	padding-bottom: 5px;
 }
 
-.qr_time {
-	display: none;
+/* Temporary fix */
+.icon.fa-quote-left + span {
+	display: inline-block;
 }

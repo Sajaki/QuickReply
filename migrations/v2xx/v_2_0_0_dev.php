@@ -18,7 +18,7 @@ class v_2_0_0_dev extends \phpbb\db\migration\migration
 
 	public static function depends_on()
 	{
-		return array('\boardtools\quickreply\migrations\v1xx\v_1_0_2');
+		return array('\boardtools\quickreply\migrations\v1xx\v_1_1_0_dev');
 	}
 
 	public function update_data()
